@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="icon" href="https://d1nhio0ox7pgb.cloudfront.net/_img/o_collection_png/green_dark_grey/256x256/plain/currency_dollar.png">
+
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+
+    <!-- bootstrap 4 -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" charset="utf-8"></script>
+    <!-- <link rel="stylesheet" href="https://bootswatch.com/4/solar/bootstrap.min.css"> -->
+
+    <!-- font awesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
+
+    <!-- handlebars -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js" charset="utf-8"></script>
+
+    <!-- canvasjs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvasjs/1.7.0/canvasjs.min.js" charset="utf-8"></script>
+
+  </head>
+  <body>
+
+    <style>
+      h6{
+        margin-top: .5rem;
+      }
+      a.canvasjs-chart-credit{
+        display: none;
+      }
+      .tiny-font{
+        font-size: .7em;
+      }
+      .category{
+        width: 100%;
+        margin-bottom: 1em;
+        margin-top: 2em;
+      }
+      .clickable{
+        cursor: pointer;
+      }
+    </style>
+
+    <nav class="navbar navbar-expand-lg  navbar-dark bg-dark">
+      <h2><a class="navbar-brand text-light" >Budget Calculator</a></h2>
+      <ul id="nav-controls" class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a id="login" class="nav-link clickable">Login</a>
+        </li>
+      </ul>
+    </nav>
+    <br/>
+
+    <div class="container">
+      <h4 class="text-center">How it works...</h4>
+      <div class="row">
+        <p class="text-center">
+          Use "plus" buttons to add either sources of income or expenses. Expenses can be added as either dollar-values or as income percentages. If you would like some advice on budget-building recommendations, click <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">here</a>.
+        </p>
+      </div>
+      <hr/>
+      <h4 class="text-center">INCOME</h4>
+      <div id="income-control-box" class="row mb-3">
+        <button class="add-category  col-sm-2 btn btn-outline-dark" data-type="income">Add Category</button>
+        <button id="add-income-button" class="col-sm-1 offset-sm-9 btn btn-success">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+
+      <div id="income-container" class="row">
+      </div>
+
+      <div id="income-total-box" class="row">
+        <span class="bold col-sm-8"><strong> TOTAL MONTHLY INCOME</strong></span>
+        <input id="income-total" type="Number" value="0.00" class="form-control col-sm-4 text-right" readonly/>
+      </div>
+
+
+      <hr/>
+      <h4 class="text-center">Expenses</h4>
+      <div id="expense-control-box" class="row mb-3">
+        <button class="add-category  col-sm-2 btn btn-outline-dark" data-type="expense">Add Category</button>
+        <button id="add-expense-button" class="col-sm-1 offset-sm-9 btn btn-danger">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+
+
+      <div id="expense-container" class="row">
+      </div>
+
+
+      <div id="epense-total-box" class="row mb-3">
+        <span class="bold col-sm-8"><strong>TOTAL MONTHLY EXPENSES</strong></span>
+        <input id="expense-total" type="Number" value="0.00" class="form-control col-sm-4 text-right" readonly/>
+      </div>
+
+      <div class="row mb-3">
+        <!-- <span class="bold col-sm-8"><strong>DIFFERENCE</strong></span> -->
+        <input id="diff-box" type="text" class="form-control text-right col-sm-4 offset-sm-8" value="$0.00" readonly/>
+      </div>
+
+    </div>
+
+    <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+
+    <div class="container mb-5">
+      <div class="row">
+        <button id="new-budget" class="btn btn-sm btn-primary col-sm-4 btn-outline-dark">New Budget</button>
+        <button id="load-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-4 btn-outline-dark">Load Budget</button>
+        <button id="save-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-4 btn-outline-dark">Save Budget</button>
+      </div>
+    </div>
+
+
+
+    <div id="saveModal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Save Budget</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <div class="row">
+                <input id="save-name" class="form-control" placeholder="Budget Name"/>
+                <span class="tiny-font">All budgets are saved locally. To reaccess your budget, please load it using the same device you saved it on.</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="save-budget" type="button" class="btn btn-outline-dark">Save changes</button>
+            <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="categoryModal" class="modal" tabindex="-1" role="dialog" data-type="expense">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">New Category</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <div class="row">
+                <input id="category-name" class="form-control" placeholder="Category Name"/>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="new-category" type="button" class="btn btn-outline-dark">Create Category</button>
+            <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loadModal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Load Budget</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <div class="row">
+                <table class="table table-striped">
+                  <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                  </thead>
+                  <tbody id="load-files">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <script>
+      const budgetInfo = (function(){
+        var name = "My Budget";
+        var loadFile = false;
+        var incomes = [];
+        var expenses = [];
+        return {
+          getName: function(){ return name },
+          setName: function(newName){ name = newName; return newName },
+          getLoadFile: function(){return loadFile},
+          setLoadFile: function(setting=true){ loadFile = setting; return loadFile},
+          getIncomes: function(){return incomes },
+          setIncomes: function(newIncomes){incomes=newIncomes;return incomes},
+          setExpenses: function(newExpenses){expenses=newExpenses;return expenses},
+          getExpenses: function(){ return expenses },
+          resetData: function(){
+            name = "My Budget";
+            loadFile = false;
+            incomes = [];
+            expenses = [];
+            return true
+          },
+        }
+      })()
+
+      $.ajax('/api/login/info')
+      .then(function(data){
+        console.log(data);
+        if(data.error){ return };
+        addNameCard(data);
+        $('#login').html('Logout');
+      });
+
+      $(document).ready(()=>{
+        $(document).on('click','.remove-button',(event)=>{
+          let row = $(event.target).closest('.source').remove();
+          calculateIncomeTotals();
+          calculateExpenseTotals();
+        });
+
+        $(document).on('change','.income-input',(event)=>{
+          calculateIncomeTotals();
+          calculateExpenseTotals();
+        });
+
+        $(document).on('change','.expense-input',(event)=>{
+          updateExpenseViews();
+        });
+
+        $('#new-budget').on('click', ()=>{resetBudget(true)});
+
+        $('#save-budget-modal-trigger').on('click', ()=>{
+          let val;
+          if(budgetInfo.getLoadFile()){
+            val = budgetInfo.getName();
+          }else{
+            val = null;
+          };
+          $('#save-name').val(val);
+          $('#saveModal').modal('toggle');
+        });
+
+        $('#load-budget-modal-trigger').on('click',()=>{
+          $('#load-files').empty();
+          let saves = [];
+          for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+            let save = localStorage.key(i);
+            let value = JSON.parse(localStorage.getItem(save));
+            saves.push(value);
+          }
+          saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
+          saves.forEach((save,index)=>{
+            let saveObj = {};
+            let date = new Date(save.dateSaved);
+            saveObj.name = save.name;
+            saveObj.date = date.toDateString();
+            saveObj.incomes= JSON.stringify(save.incomes),
+            saveObj.expenses= JSON.stringify(save.expenses)
+            addLoadFile(saveObj);
+          });
+          $('#loadModal').modal('toggle');
+        });
+
+        $('#save-budget').on('click', saveBudget);
+
+        $(document).on('click', '.load-budget', loadBudget);
+
+        $('#add-income-button').on('click', addIncome);
+
+        $('#add-expense-button').on('click', addExpense);
+
+        $('.add-category').on('click', ()=>{
+          let type = $(event.target).data('type');
+          $('#categoryModal').data('type', type);
+          $('#categoryModal').modal('toggle');
+        });
+
+        $('#new-category').on('click', createCategory);
+
+        $(document).on('click', '.remove-category', ()=>{
+          $(event.target).closest('.category').remove();
+        });
+
+        $(document).on('click', '.delete-load', deleteLoad);
+      });
+      $('#income-container').sortable();
+      $('#expense-container').sortable();
+
+      let deleteLoad = (event)=>{
+        if(confirm('This will permanently delete this budget. Are you sure?')){
+          let $row = $(event.target).closest('tr');
+          let key = $row.find('td').first().html();
+          $row.remove();
+          localStorage.removeItem(key);
+        }
+      }
+
+      let addIncome = (event, context)=>{
+        if (context === undefined || context.length === 0){
+          context = {
+            name: '',
+            value: '',
+          };
+        }
+        let source = $('#income-template').html();
+        let template = Handlebars.compile(source);
+        let html = template(context);
+        $('#income-container').append(html);
+      }
+
+      let addExpense = (event, context)=>{
+        if (context === undefined || context.length === 0){
+          context = {};
+        }
+        let source = $('#expense-template').html();
+        let template = Handlebars.compile(source);
+        let html = template(context);
+        $('#expense-container').append(html);
+      }
+
+      let addLoadFile = (context)=>{
+        let source = $('#load-file-template').html();
+        let template = Handlebars.compile(source);
+        let html = template(context);
+        $('#load-files').append(html);
+      }
+
+      function updateExpenseViews(){
+        let $expenseValuePanel = $(event.target).closest('.expense').find('.expense-value');
+        let inputValue = $(event.target).val();
+        if(inputValue[0] === "~"){
+          inputValue = inputValue.substring(1);
+        }
+        if(inputValue.indexOf('%') > -1){
+          let incomeTotal = +($('#income-total').val());
+          let percentage = $(event.target).val().split('%')[0];
+          if(isNaN(percentage)){
+            $(event.target).val('');
+            $expenseValuePanel.html('$0.00');
+          }else{
+            percentage = +percentage;
+            let value = (incomeTotal * (percentage/100)).toFixed(2);
+            $expenseValuePanel.html(`$${value}`);
+          }
+        }else if(isNaN(inputValue)){
+          $(event.target).val('');
+          $expenseValuePanel.html('$0.00');
+        }else{
+          $expenseValuePanel.html(`$${(+inputValue).toFixed(2)}`);
+        }
+        calculateExpenseTotals();
+      }
+
+      function calculateExpenseTotals(){
+        let total = 0;
+        $('.expense-value').each((index,ele)=>{
+          let amount = $(ele).html().split('$')[1];
+          total += +(amount);
+        });
+        $('#expense-total').val(total.toFixed(2));
+        buildGraph();
+      }
+
+      function calculateIncomeTotals(){
+        let incomeCount = 0.0;
+        $('.income').each((index, ele)=>{
+          let amount = $(ele).find('.income-amount').val();
+          if(amount[0] === "~"){
+            amount = amount.substring(1);
+          }
+          amount = +amount;
+          incomeCount += amount;
+        });
+        incomeCount = incomeCount.toFixed(2);
+        $('#income-total').val(incomeCount);
+        buildGraph();
+      }
+
+      function buildGraph(){
+        let data = [];
+        let income = +($('#income-total').val());
+        let expenses = +($('#expense-total').val());
+        let diff = income-expenses;
+        let surplusPercent = diff/income*100;
+        setDiff(diff);
+        if (income <= 0 || $('.expense').length < 1){
+          return;
+        }
+        $('.expense').each((index, ele)=>{
+          let name = $(ele).find('.expense-name').val();
+          let cost = $(ele).find('.expense-value').html();
+          cost = +cost.split('$')[1];
+          let percent = (cost/income).toFixed(2);
+          data.push({y: ((+percent)*100), label: name});
+        });
+
+        data.unshift({y: surplusPercent, label: "surplus"})
+        var chart = new CanvasJS.Chart("chartContainer", {
+        	animationEnabled: false,
+        	title: {
+        		text:  budgetInfo.getName()
+        	},
+        	data: [{
+        		type: "pie",
+        		startAngle: 240,
+        		yValueFormatString: "##0.00\"%\"",
+        		indexLabel: "{label} {y}",
+        		dataPoints: data
+        	}]
+        });
+        chart.render();
+      }
+
+      function setDiff(diff){
+        $('#diff-box').val(`${diff>=0?'':'-'}$${Math.abs(diff).toFixed(2)}`);
+        if(diff > 0){
+          $('#diff-box').addClass('bg-success text-light');
+          $('#diff-box').removeClass('bg-danger');
+        }else if(diff === 0){
+          $('#diff-box').removeClass('bg-success text-light');
+          $('#diff-box').removeClass('bg-danger text-light');
+        }else{
+          $('#diff-box').removeClass('bg-success');
+          $('#diff-box').addClass('bg-danger text-light');
+        }
+      }
+
+      function resetBudget(verify){
+        if(verify){
+          if(!confirm('All unsaved budget data will be lost. Are you sure?')){
+            return
+          }
+        }
+        budgetInfo.resetData();
+        $('#income-container').empty();
+        $('#income-total').val('0.00');
+        $('#expense-container').empty();
+        $('#expense-total').val('0.00');
+
+        var chart = new CanvasJS.Chart("chartContainer", {});
+        buildGraph();
+      }
+
+      function loadBudget(){
+        let name = $(this).closest('.load-row').find('.load-name').html();
+        budgetInfo.setName(name);
+        let button = $(this);
+        let incomes = button.data('incomes');
+        let expenses = button.data('expenses');
+        budgetInfo.setIncomes(incomes);
+        budgetInfo.setExpenses(expenses);
+        $('#income-container').empty();
+        incomes.forEach((income, index)=>{
+          if(income.category){
+            addCategory(income, 'income');
+          }else{
+            addIncome(null, income);
+          }
+        });
+        $('.income-input').first().change();
+
+        $('#expense-container').empty();
+        expenses.forEach((expense, index)=>{
+          if(expense.category){
+            addCategory(expense, 'expense');
+          }else{
+            addExpense(null, expense);
+          }
+        });
+
+        $('.expense').each((i,ele)=>{
+          let $ele = $(ele);
+          let $expenseValuePanel = $ele.find('.expense-value');
+          let val = $ele.find('.expense-input').val();
+          if (val.indexOf('%') > -1){
+            let percentage = val.split('%')[0];
+            if(isNaN(percentage)){
+              $ele.find('.expense-input').val('');
+              $expenseValuePanel.html('$0.00');
+            }else{
+              percentage = +percentage;
+              let incomeTotal = +($('#income-total').val());
+              let value = (incomeTotal * (percentage/100)).toFixed(2);
+              $expenseValuePanel.html(`$${value}`);
+            }
+          }else if(val[0]==='~'){
+            val = val.substring(1);
+            $expenseValuePanel.html(`$${(+val).toFixed(2)}`);
+          }else if(isNaN(val)){
+            $ele.find('.expense-input').val('');
+            $expenseValuePanel.html('$0.00');
+          }else{
+            $expenseValuePanel.html(`$${(+val).toFixed(2)}`);
+          }
+
+        });
+        calculateExpenseTotals()
+
+        $('#loadModal').modal('toggle');
+        budgetInfo.setLoadFile(true);
+      }
+
+      function saveBudget(){
+        let saveNameValue = $('#save-name').val();
+        budgetInfo.setName(saveNameValue);
+        buildGraph();
+        if(localStorage.getItem(saveNameValue)){
+          if(!confirm(`There is already a saved budget called "${saveNameValue}"". Would you like to overwrite it?`)){
+            return;
+          }
+        }
+
+        let budget = {};
+        budget.name = saveNameValue;
+        budget.dateSaved = Date.now();
+        budget.incomes = [];
+        budget.expenses =[];
+        $('#income-container').children().each((index, ele)=>{
+          let inc;
+          if($(ele).hasClass('category')){
+            inc = {
+              category: $(ele).find('.category-title').html(),
+              color: '#FF0000'
+            };
+          }else{
+            inc = {
+              name: $(ele).find('.income-input').val(),
+              value: Number($(ele).find('.income-amount').val())
+            };
+          }
+          budget.incomes.push(inc)
+        });
+
+        $('#expense-container').children().each((index, ele)=>{
+          let exp;
+          if($(ele).hasClass('category')){
+            exp = {
+              category: $(ele).find('.category-title').html(),
+              color: '#FF0000'
+            };
+          }else{
+            let val = $(ele).find('.expense-input').val();
+            if(val.indexOf('%') > -1){
+              let percentage = val.split('%')[0];
+              if(isNaN(percentage)){
+                val = 0;
+              }
+            }else if(val[0] === '~'){
+              val = val;
+            }else{
+              val = Number(val);
+            }
+            exp = {
+              name: $(ele).find('.expense-name').val(),
+              value: val
+            }
+          }
+
+          budget.expenses.push(exp);
+        });
+        localStorage.setItem(saveNameValue, JSON.stringify(budget));
+        $('#save-name').val('')
+        $('#saveModal').modal('toggle');
+      }
+
+      function addCategory(context, type){
+        let source = $('#category-template').html();
+        let template = Handlebars.compile(source);
+        let html = template({
+          title: context.category.toUpperCase(),
+          color: context.color
+        });
+        $('#'+type+'-container').append(html);
+      }
+
+      function createCategory(){
+        let type = $('#categoryModal').data('type');
+        let title = $('#category-name').val();
+        $('#category-name').val(null);
+        addCategory({title},type);
+        $('#categoryModal').modal('toggle');
+      }
+
+      function addNameCard(user){
+        let source = $('#nameplate-control-template').html();
+        let template = Handlebars.compile(source);
+        let html = template(user);
+        $('#nav-controls').prepend(html);
+      }
+    </script>
+
+
+
+
+    <!-- handlebar template -->
+    <script id="income-template" type="text/x-handlebars-template">
+      <div class="income source mb-3 form-inline col-sm-12">
+        <div class="btn btn-default">
+          <i class="fas fa-bars"></i>
+        </div>
+        <input type="text" class="income-input form-control col-sm-4 mr-1" placeholder="INCOME SOURCE" value="{{name}}">
+        <input type ="number" step="0.01" class="income-input form-control col-sm-2  mr-1 income-amount" value="{{value}}"/>
+        <button class="btn btn-default remove-button">
+          <i class="fas fa-times-circle"></i>
+        </button>
+      </div>
+    </script>
+
+    <script id="expense-template" type="text/x-handlebars-template">
+      <div  class="expense source mb-3 form-inline col-sm-12">
+        <div class="btn btn-default">
+          <i class="fas fa-bars"></i>
+        </div>
+        <input type="text" class="expense-name form-control col-sm-4 mr-1" placeholder="EXPENSE SOURCE" value="{{name}}">
+        <input type ="text" step="0.01" class="form-control col-sm-2  mr-1 expense-input" value="{{value}}">
+        <button  class="btn btn-default remove-button">
+          <i class="fas fa-times-circle"></i>
+        </button>
+        <span class="expense-value col-sm-1 float-left offset-sm-4">$0.00</span>
+      </div>
+    </script>
+
+    <script id="load-file-template" type="text/x-handlebar-template">
+      <tr class="load-row">
+        <td class="load-name">{{name}}</td>
+        <td>{{date}}</td>
+        <td>
+          <button class="btn btn-outline-success load-budget" data-incomes='{{incomes}}' data-expenses='{{expenses}}'>
+            <i class="fas fa-check-circle"></i>
+            </button></td>
+        <td>
+          <button class="btn btn-outline-danger delete-load">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    </script>
+
+    <script id="category-template" type="text/x-handlebars-template">
+      <div class="bg-dark text-center text-light category" style="width:100%;background-color:{{color}} !important;">
+        <h6><span class="category-title">{{title}}</span> <i class="fas fa-times-circle clickable remove-category"></i></h6>
+      </div>
+    </script>
+
+    <script id="nameplate-control-template" type="text/x-handlebars-template">
+      <li class="nav-item">
+        <a id="namecard" class="nav-link disabled"data-userId="{{id}}">{{firstName}} {{lastName}}</a>
+      </li>
+    </script>
+
+
+
+  </body>
+</html>
