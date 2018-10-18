@@ -47,8 +47,8 @@
     <nav class="navbar navbar-expand-lg  navbar-dark bg-dark">
       <h2><a class="navbar-brand text-light" >Budget Calculator</a></h2>
       <ul id="nav-controls" class="navbar-nav ml-auto">
-        <li class="nav-item">
-          <a id="login" class="nav-link clickable">Login</a>
+        <li id="loginButton" class="nav-item">
+          <a id="loginText" class="nav-link clickable">Login</a>
         </li>
       </ul>
     </nav>
@@ -109,9 +109,10 @@
 
     <div class="container mb-5">
       <div class="row">
-        <button id="new-budget" class="btn btn-sm btn-primary col-sm-4 btn-outline-dark">New Budget</button>
-        <button id="load-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-4 btn-outline-dark">Load Budget</button>
-        <button id="save-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-4 btn-outline-dark">Save Budget</button>
+        <button id="new-budget" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark">New Budget</button>
+        <button id="load-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark">Load Budget</button>
+        <button id="save-button-local" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark save-budget-modal-trigger">Save Budget Locally</button>
+        <button id="save-budget-db" class="btn btn-sm btn-primary col-sm-3 btn-dark save-budget-modal-trigger" disabled>Save Budget</button>
       </div>
     </div>
 
@@ -200,6 +201,31 @@
       </div>
     </div>
 
+    <div id="loginModal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Login</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <div class="row">
+                <p>Logging in provides the opportunity to save budgets to the database. The option to save locally will still be available to those that would not like to create an account.</p>
+                <input id="login-username" type="text" placeholder="Username" class="form-control"/>
+                <input id="login-password" type="password" placeholder="Password" class="form-control mt-1 "/>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="loginSubmit" type="button" class="btn btn-outline-dark" data-dismiss="modal">Login</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
 
 
@@ -209,10 +235,14 @@
         var loadFile = false;
         var incomes = [];
         var expenses = [];
+        var login = false;
         return {
           getName: function(){ return name },
           setName: function(newName){ name = newName; return newName },
           getLoadFile: function(){return loadFile},
+          getLogin: function(){return login},
+          loginUser: function(){ login = true; return login; },
+          logoutUser: function(){ login = false; return login; },
           setLoadFile: function(setting=true){ loadFile = setting; return loadFile},
           getIncomes: function(){return incomes },
           setIncomes: function(newIncomes){incomes=newIncomes;return incomes},
@@ -232,8 +262,7 @@
       .then(function(data){
         console.log(data);
         if(data.error){ return };
-        addNameCard(data);
-        $('#login').html('Logout');
+        login(data);
       });
 
       $(document).ready(()=>{
@@ -250,6 +279,35 @@
 
         $(document).on('change','.expense-input',(event)=>{
           updateExpenseViews();
+        });
+
+        $('#loginSubmit').on('click', (event)=>{
+          event.preventDefault();
+          let userName = $('#login-username').val();
+          let password = $('#login-password').val();
+          let loginInfo = { userName, password };
+          $.ajax('/api/login', {
+            method: 'POST',
+            data: loginInfo
+          })
+          .then((data)=>{
+            login(data);
+          });
+
+        });
+
+        $('#loginButton').on('click', (event)=>{
+          let $loginButton = $(event.target);
+          if($loginButton.html() === 'Login'){
+            $('#loginModal').modal('toggle');
+          }else{
+            $.ajax('/api/login', { method: 'DELETE' })
+            .then((data)=>{
+              if (data){
+                logout(data);
+              }
+            });
+          }
         });
 
         $('#new-budget').on('click', ()=>{resetBudget(true)});
@@ -308,7 +366,9 @@
 
         $(document).on('click', '.delete-load', deleteLoad);
       });
+
       $('#income-container').sortable();
+
       $('#expense-container').sortable();
 
       let deleteLoad = (event)=>{
@@ -611,6 +671,24 @@
         let template = Handlebars.compile(source);
         let html = template(user);
         $('#nav-controls').prepend(html);
+      }
+
+      function login(user){
+        addNameCard(user);
+        $('#loginText').html('Logout');
+        $('#save-budget-db').attr('disabled', false);
+        $('#save-budget-db').removeClass('btn-dark');
+        $('#save-budget-db').addClass('btn-outline-dark');
+        budgetInfo.loginUser();
+      }
+
+      function logout(user){
+        $('#loginText').html('Login');
+        $('#namecard').remove();
+        $('#save-budget-db').attr('disabled', true);
+        $('#save-budget-db').addClass('btn-dark');
+        $('#save-budget-db').removeClass('btn-outline-dark');
+        budgetInfo.logoutUser();
       }
     </script>
 
