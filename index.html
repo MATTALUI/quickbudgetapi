@@ -111,8 +111,8 @@
       <div class="row">
         <button id="new-budget" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark">New Budget</button>
         <button id="load-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark">Load Budget</button>
-        <button id="save-button-local" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark save-budget-modal-trigger">Save Budget Locally</button>
-        <button id="save-budget-db" class="btn btn-sm btn-primary col-sm-3 btn-dark save-budget-modal-trigger" disabled>Save Budget</button>
+        <button id="save-button-local" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark save-budget-modal-trigger" data-savetype="local">Save Budget Locally</button>
+        <button id="save-budget-db" class="btn btn-sm btn-primary col-sm-3 btn-dark save-budget-modal-trigger" data-savetype="db" disabled>Save Budget</button>
       </div>
     </div>
 
@@ -291,6 +291,7 @@
             data: loginInfo
           })
           .then((data)=>{
+            console.log(data);
             login(data);
           });
 
@@ -312,14 +313,17 @@
 
         $('#new-budget').on('click', ()=>{resetBudget(true)});
 
-        $('#save-budget-modal-trigger').on('click', ()=>{
+        $('.save-budget-modal-trigger').on('click', (event)=>{
           let val;
+          let type = $(event.target).data('savetype');
+
           if(budgetInfo.getLoadFile()){
             val = budgetInfo.getName();
           }else{
             val = null;
           };
           $('#save-name').val(val);
+          $('#saveModal').data('saveType', type);
           $('#saveModal').modal('toggle');
         });
 
@@ -643,17 +647,27 @@
 
           budget.expenses.push(exp);
         });
-        localStorage.setItem(saveNameValue, JSON.stringify(budget));
-        $('#save-name').val('')
-        $('#saveModal').modal('toggle');
+        console.log(budget);
+        if ($('#saveModal').data('saveType') === 'local'){
+          localStorage.setItem(saveNameValue, JSON.stringify(budget));
+          $('#save-name').val('')
+          $('#saveModal').modal('toggle');
+        }else{
+          return $.ajax('/api/budgets', { method: 'POST', data: {
+            name: budget.name,
+            dateSaved: budget.dateSaved,
+            expenses: JSON.stringify(budget.expenses),
+            incomes: JSON.stringify(budget.incomes),
+          } })
+          .then((data)=>{console.log(data);})
+        }
       }
 
       function addCategory(context, type){
         let source = $('#category-template').html();
         let template = Handlebars.compile(source);
         let html = template({
-          title: context.category.toUpperCase(),
-          color: context.color
+          title: context.title.toUpperCase()
         });
         $('#'+type+'-container').append(html);
       }

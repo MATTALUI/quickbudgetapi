@@ -1,6 +1,7 @@
 exports.up = function(knex, Promise) {
   return knex.schema.createTable("budgets", function (table) {
     table.increments('id').notNullable();
+    table.integer('user_id').notNullable();
     table.string('name').notNullable().unique();
     table.bigInteger('dateSaved').notNullable();
     table.json('expenses').notNullable();
