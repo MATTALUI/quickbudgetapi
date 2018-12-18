@@ -21,6 +21,7 @@ app.use(function (req, res, next) {
 });
 
 app.use('/api', api);
+app.use('/public', express.static('public'));
 
 app.get('/', (req,res,next)=>{
   res.sendFile(path.join(__dirname+'/index.html'));

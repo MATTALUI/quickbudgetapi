@@ -6,6 +6,13 @@ module.exports = {
     .returning('*')
     .then(budgets=>budgets);
   },
+  getUserBudgets: (userId)=>{
+    return knex('budgets')
+    .select('*')
+    .where('user_id', userId)
+    .returning('*')
+    then(budgets=>budgets)
+  },
   getUserInfo: (userName)=>{
     return knex('users')
     .select(['id', 'firstName', 'lastName', 'username'])

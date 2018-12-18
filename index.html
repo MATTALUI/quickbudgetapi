@@ -28,6 +28,9 @@
       h6{
         margin-top: .5rem;
       }
+      /* table{
+        max-width: 100%;
+      } */
       a.canvasjs-chart-credit{
         display: none;
       }
@@ -41,6 +44,14 @@
       }
       .clickable{
         cursor: pointer;
+      }
+      .loading-container{
+        width: 50%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .center-img{
+        width: 100%;
       }
     </style>
 
@@ -179,7 +190,10 @@
           <div class="modal-body">
             <div class="container">
               <div class="row">
-                <table class="table table-striped">
+                <div id="loading-load" class ="loading-container">
+                  <img src = "public/loading.gif" class="center-img"/>
+                </div>
+                <table id="load-table" class="table table-striped">
                   <thead>
                   <tr>
                     <th>Name</th>
@@ -329,22 +343,53 @@
 
         $('#load-budget-modal-trigger').on('click',()=>{
           $('#load-files').empty();
-          let saves = [];
-          for ( var i = 0, len = localStorage.length; i < len; ++i ) {
-            let save = localStorage.key(i);
-            let value = JSON.parse(localStorage.getItem(save));
-            saves.push(value);
+          $('#loading-load').removeClass('d-none');
+          $('#load-table').addClass('d-none');
+
+          if (budgetInfo.getLogin()){
+            $.ajax('/api/budgets')
+            .then((data)=>{
+              let saves = [];
+              for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+                let save = localStorage.key(i);
+                let value = JSON.parse(localStorage.getItem(save));
+                saves.push(value);
+              }
+              saves = saves.concat(data);
+              saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
+              saves.forEach((save,index)=>{
+                let saveObj = {};
+                let date = new Date(+save.dateSaved);
+                saveObj.name = save.name;
+                saveObj.date = date.toDateString();
+                saveObj.incomes= JSON.stringify(save.incomes),
+                saveObj.expenses= JSON.stringify(save.expenses)
+                addLoadFile(saveObj);
+              });
+              $('#loading-load').addClass('d-none');
+              $('#load-table').removeClass('d-none');
+            });
+          }else{
+            let saves = [];
+            for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+              let save = localStorage.key(i);
+              let value = JSON.parse(localStorage.getItem(save));
+              saves.push(value);
+            }
+            saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
+            console.log(saves);
+            saves.forEach((save,index)=>{
+              let saveObj = {};
+              let date = new Date(save.dateSaved);
+              saveObj.name = save.name;
+              saveObj.date = date.toDateString();
+              saveObj.incomes= JSON.stringify(save.incomes),
+              saveObj.expenses= JSON.stringify(save.expenses)
+              addLoadFile(saveObj);
+              $('#loading-load').addClass('d-none');
+              $('#load-table').removeClass('d-none');
+            });
           }
-          saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
-          saves.forEach((save,index)=>{
-            let saveObj = {};
-            let date = new Date(save.dateSaved);
-            saveObj.name = save.name;
-            saveObj.date = date.toDateString();
-            saveObj.incomes= JSON.stringify(save.incomes),
-            saveObj.expenses= JSON.stringify(save.expenses)
-            addLoadFile(saveObj);
-          });
           $('#loadModal').modal('toggle');
         });
 
