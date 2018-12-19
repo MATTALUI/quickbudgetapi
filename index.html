@@ -712,7 +712,7 @@
         let source = $('#category-template').html();
         let template = Handlebars.compile(source);
         let html = template({
-          title: context.title.toUpperCase()
+          title: context.category.toUpperCase()
         });
         $('#'+type+'-container').append(html);
       }
