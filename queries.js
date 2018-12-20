@@ -28,7 +28,8 @@ module.exports = {
     .first()
     .then(user=>user.password);
   },
-  createBudget: (budget)=>{
+  createBudget: (userId, budget)=>{
+    budget.user_id = userId;
     return knex('budgets')
     .insert(budget)
     .returning('*')

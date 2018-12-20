@@ -274,7 +274,7 @@
 
       $.ajax('/api/login/info')
       .then(function(data){
-        console.log(data);
+        // console.log(data);
         if(data.error){ return };
         login(data);
       });
@@ -305,7 +305,7 @@
             data: loginInfo
           })
           .then((data)=>{
-            console.log(data);
+            // console.log(data);
             login(data);
           });
 
@@ -377,7 +377,6 @@
               saves.push(value);
             }
             saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
-            console.log(saves);
             saves.forEach((save,index)=>{
               let saveObj = {};
               let date = new Date(save.dateSaved);
@@ -638,11 +637,6 @@
         let saveNameValue = $('#save-name').val();
         budgetInfo.setName(saveNameValue);
         buildGraph();
-        if(localStorage.getItem(saveNameValue)){
-          if(!confirm(`There is already a saved budget called "${saveNameValue}"". Would you like to overwrite it?`)){
-            return;
-          }
-        }
 
         let budget = {};
         budget.name = saveNameValue;
@@ -692,19 +686,22 @@
 
           budget.expenses.push(exp);
         });
-        console.log(budget);
-        if ($('#saveModal').data('saveType') === 'local'){
+        // console.log(budget);
+        let type = $('#saveModal').data('saveType');
+        if ( type === 'local'){
           localStorage.setItem(saveNameValue, JSON.stringify(budget));
           $('#save-name').val('')
           $('#saveModal').modal('toggle');
-        }else{
+        }else if(type === 'db' && budgetInfo.getLogin()){
           return $.ajax('/api/budgets', { method: 'POST', data: {
             name: budget.name,
             dateSaved: budget.dateSaved,
             expenses: JSON.stringify(budget.expenses),
             incomes: JSON.stringify(budget.incomes),
           } })
-          .then((data)=>{console.log(data);})
+          .then((data)=>{/*TODO: do something with the data?*/})
+        }else{
+          console.error('issue saving budget:', budget)
         }
       }
 
@@ -721,7 +718,7 @@
         let type = $('#categoryModal').data('type');
         let title = $('#category-name').val();
         $('#category-name').val(null);
-        addCategory({title},type);
+        addCategory({category: title},type);
         $('#categoryModal').modal('toggle');
       }
 

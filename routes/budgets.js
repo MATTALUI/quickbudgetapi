@@ -8,7 +8,7 @@ router.get('/', (req,res,next)=>{
 });
 
 router.post('/', (req,res,next)=>{
-  queries.createBudget(req.body).then((createBudget)=>{
+  queries.createBudget(req.user.id, req.body).then((createdBudget)=>{
     res.send(createdBudget);
   });
 });
