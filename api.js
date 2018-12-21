@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const budgets = require('./routes/budgets.js');
 const login = require('./routes/login.js');
+const mobile = require('./routes/mobile.js');
 const jwt = require('jsonwebtoken');
 const queries = require('./queries.js');
 
 router.use('/login', login);
+
+router.use('/mobile', mobile);
 
 
 

@@ -244,6 +244,13 @@
 
 
     <script>
+      /*
+      TODO:
+      - check API for duplicate names
+      - edit already saved budgets
+      - delete budgets from the API
+      - add mobile interface
+      */
       const budgetInfo = (function(){
         var name = "My Budget";
         var loadFile = false;
@@ -353,9 +360,13 @@
               for ( var i = 0, len = localStorage.length; i < len; ++i ) {
                 let save = localStorage.key(i);
                 let value = JSON.parse(localStorage.getItem(save));
+                value.type = "local";
                 saves.push(value);
               }
-              saves = saves.concat(data);
+              saves = saves.concat(data.map((budget)=>{
+                budget.type = "db";
+                return budget;
+              }));
               saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
               saves.forEach((save,index)=>{
                 let saveObj = {};
@@ -364,6 +375,7 @@
                 saveObj.date = date.toDateString();
                 saveObj.incomes= JSON.stringify(save.incomes),
                 saveObj.expenses= JSON.stringify(save.expenses)
+                saveObj.type = save.type;
                 addLoadFile(saveObj);
               });
               $('#loading-load').addClass('d-none');
@@ -374,6 +386,7 @@
             for ( var i = 0, len = localStorage.length; i < len; ++i ) {
               let save = localStorage.key(i);
               let value = JSON.parse(localStorage.getItem(save));
+              value.type = "local";
               saves.push(value);
             }
             saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
@@ -384,6 +397,7 @@
               saveObj.date = date.toDateString();
               saveObj.incomes= JSON.stringify(save.incomes),
               saveObj.expenses= JSON.stringify(save.expenses)
+              saveObj.type = save.type;
               addLoadFile(saveObj);
               $('#loading-load').addClass('d-none');
               $('#load-table').removeClass('d-none');
@@ -421,10 +435,19 @@
 
       let deleteLoad = (event)=>{
         if(confirm('This will permanently delete this budget. Are you sure?')){
+          let $button = $(event.target).closest('.delete-load');
           let $row = $(event.target).closest('tr');
           let key = $row.find('td').first().html();
+          let type = $button.data('type');
           $row.remove();
-          localStorage.removeItem(key);
+          if(type === 'local'){
+            localStorage.removeItem(key);
+          }else if(type === 'db'){
+            $.ajax('/api/budgets',{method: 'DELETE', data: {name: key} })
+            .then((data)=>{
+              //TODO: do something with deleted budget?
+            });
+          }
         }
       }
 
@@ -788,7 +811,7 @@
             <i class="fas fa-check-circle"></i>
             </button></td>
         <td>
-          <button class="btn btn-outline-danger delete-load">
+          <button class="btn btn-outline-danger delete-load" data-type='{{type}}'>
             <i class="fas fa-trash"></i>
           </button>
         </td>

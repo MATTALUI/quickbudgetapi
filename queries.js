@@ -34,5 +34,13 @@ module.exports = {
     .insert(budget)
     .returning('*')
     .then(budget=>budget);
+  },
+  deleteBudget: (userId, budgetName)=>{
+    return knex('budgets')
+    .where('user_id', userId)
+    .where('name', budgetName)
+    .del()
+    .returning("*")
+    .then(del=>del[0]);
   }
 };
