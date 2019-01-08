@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 
 
 router.get('/info', function(req,res,next){
-  // res.clearCookie('user');
   if (req.cookies.user){
     jwt.verify(req.cookies.user, process.env.JWTSECRET, (error, data)=>{
       if (error){
@@ -50,7 +49,7 @@ router.post('/',function(req,res,next){
               res.cookie('user', token, {httpOnly: true});
               // queries.getUserInfo(user.userName).then((user)=>{
               //   console.log(user);
-              console.log(res.cookie.user);
+              // console.log(res.cookie.user);
                 return res.send(user);
               // });
             });

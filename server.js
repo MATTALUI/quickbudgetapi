@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const knex = require('./knex.js');
-const morgan = require('morgan')
+const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const api = require('./api.js');
@@ -31,6 +31,6 @@ app.use('*', (req, res, next)=>{
   res.sendStatus(404);
 });
 
-app.listen(port,()=>{
-  console.log('listening on :'+ port);
+app.listen(port,'10.37.0.112',()=>{
+  console.log('listening on 10.37.0.112:'+ port);
 });

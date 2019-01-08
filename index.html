@@ -368,6 +368,7 @@
                 return budget;
               }));
               saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
+              console.log(saves);
               saves.forEach((save,index)=>{
                 let saveObj = {};
                 let date = new Date(+save.dateSaved);
@@ -805,7 +806,7 @@
     <script id="load-file-template" type="text/x-handlebar-template">
       <tr class="load-row">
         <td class="load-name">{{name}}</td>
-        <td>{{date}}</td>
+        <td> date {{date}}</td>
         <td>
           <button class="btn btn-outline-success load-budget" data-incomes='{{incomes}}' data-expenses='{{expenses}}'>
             <i class="fas fa-check-circle"></i>

@@ -26,12 +26,27 @@ module.exports = {
     .where('username', username)
     .returning('*')
     .first()
-    .then(user=>user.password);
+    .then((user)=>{
+      try{
+        return  user.password;
+      }catch(error){
+        return false;
+      }
+
+    });
   },
   createBudget: (userId, budget)=>{
     budget.user_id = userId;
     return knex('budgets')
     .insert(budget)
+    .returning('*')
+    .then(budget=>budget);
+  },
+  updateBudget:(userId, budget)=>{
+    return knex('budgets')
+    .where('user_id', userId)
+    .where('name', budget.name)
+    .update(budget)
     .returning('*')
     .then(budget=>budget);
   },
@@ -42,5 +57,12 @@ module.exports = {
     .del()
     .returning("*")
     .then(del=>del[0]);
+  },
+  checkBudgetExistance: (userId, name)=>{
+    return knex('budgets')
+    .select('*')
+    .where('user_id', userId)
+    .where('name', name)
+    .then((budgets)=>(budgets.length > 0));
   }
 };
