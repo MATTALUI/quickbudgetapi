@@ -31,6 +31,13 @@ app.use('*', (req, res, next)=>{
   res.sendStatus(404);
 });
 
-app.listen(port,'10.37.0.112',()=>{
-  console.log('listening on 10.37.0.112:'+ port);
-});
+if (process.env.NODE_ENV !== 'production') {
+  let ip = '10.0.0.119';
+  app.listen(port, ip,()=>{
+    console.log('listening on '+ip+':'+ port);
+  });
+}else{
+  app.listen(port,()=>{
+    console.log('listening on '+ port);
+  });
+}
