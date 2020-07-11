@@ -37,7 +37,7 @@
       }
     </style>
 
-    <nav class="navbar navbar-expand-lg  navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg  navbar-dark bg-dark mb-5">
       <h2><a class="navbar-brand text-light" >Budget Calculator</a></h2>
       <ul id="nav-controls" class="navbar-nav ml-auto">
         <li class="nav-item dropdown">
@@ -54,9 +54,11 @@
         </li>
       </ul>
     </nav>
-    <br/>
 
-    <div class="container">
+    <div id="page-load" class ="loading-container w-25 mx-auto d-none">
+      <img src = "public/loading.gif" class="w-100"/>
+    </div>
+    <main class="container">
       <h4 class="text-center">How it works...</h4>
       <div class="row">
         <p class="text-center">
@@ -105,7 +107,7 @@
         <input id="diff-box" type="text" class="form-control text-right col-sm-4 offset-sm-8" value="$0.00" readonly/>
       </div>
 
-    </div>
+    </main>
 
     <div id="chartContainer" class="w-100" style="height: 20rem;"></div>
 
@@ -245,126 +247,175 @@
 
 
     <script>
-      /*
-      TODO:
-      - check API for duplicate names
-      - edit already saved budgets
-      - delete budgets from the API
-      - add mobile interface
-      */
-      const budgetInfo = (function(){
-        var name = "My Budget";
-        var loadFile = false;
-        var incomes = [];
-        var expenses = [];
-        var login = false;
-        return {
-          getName: function(){ return name },
-          setName: function(newName){ name = newName; return newName },
-          getLoadFile: function(){return loadFile},
-          getLogin: function(){return login},
-          loginUser: function(){ login = true; return login; },
-          logoutUser: function(){ login = false; return login; },
-          setLoadFile: function(setting=true){ loadFile = setting; return loadFile},
-          getIncomes: function(){return incomes },
-          setIncomes: function(newIncomes){incomes=newIncomes;return incomes},
-          setExpenses: function(newExpenses){expenses=newExpenses;return expenses},
-          getExpenses: function(){ return expenses },
-          resetData: function(){
-            name = "My Budget";
-            loadFile = false;
-            incomes = [];
-            expenses = [];
-            return true
-          },
-        }
-      })()
+      (() => {
+        /*
+        TODO:
+        - save public budgets
+        - edit public budgets
+        - check API for duplicate names
+        - edit already saved budgets
+        - delete budgets from the API
+        - add mobile interface
+        */
+        const budgetInfo = (function(){
+          var name = "My Budget";
+          var loadFile = false;
+          var incomes = [];
+          var expenses = [];
+          var login = false;
+          return {
+            getName: function(){ return name },
+            setName: function(newName){ name = newName; return newName },
+            getLoadFile: function(){return loadFile},
+            getLogin: function(){return login},
+            loginUser: function(){ login = true; return login; },
+            logoutUser: function(){ login = false; return login; },
+            setLoadFile: function(setting=true){ loadFile = setting; return loadFile},
+            getIncomes: function(){return incomes },
+            setIncomes: function(newIncomes){incomes=newIncomes;return incomes},
+            setExpenses: function(newExpenses){expenses=newExpenses;return expenses},
+            getExpenses: function(){ return expenses },
+            resetData: function(){
+              name = "My Budget";
+              loadFile = false;
+              incomes = [];
+              expenses = [];
+              return true
+            },
+          }
+        })()
 
-      $.ajax('/api/login/info')
-      .then(function(data){
-        // console.log(data);
-        if(data.error){ return };
-        login(data);
-      });
-
-      $(document).ready(()=>{
-        $(document).on('click','.remove-button',(event)=>{
-          let row = $(event.target).closest('.source').remove();
-          calculateIncomeTotals();
-          calculateExpenseTotals();
+        $.ajax('/api/login/info')
+        .then(function(data){
+          // console.log(data);
+          if(data.error){ return };
+          login(data);
         });
 
-        $(document).on('change','.income-input',(event)=>{
-          calculateIncomeTotals();
-          calculateExpenseTotals();
-        });
+        $(document).ready(() => {
+          const urlParams = new URLSearchParams(window.location.search);
+          const publicBudgetId = urlParams.get('publicBudget');
+          if (publicBudgetId){
+            $('main').addClass('d-none');
+            $('#page-load').removeClass('d-none');
+            $.ajax(`/api/budgets/public/${publicBudgetId}`)
+            .then((budget) => {
+              $('main').removeClass('d-none');
+              $('#page-load').addClass('d-none');
+              if(!budget.error) {
+                loadBudget(null, budget);
+              }
+            })
+            .catch((error) => {
+              $('main').removeClass('d-none');
+              $('#page-load').addClass('d-none');
+            });
+          }
 
-        $(document).on('change','.expense-input',(event)=>{
-          updateExpenseViews();
-        });
+          $(document).on('click','.remove-button',(event)=>{
+            let row = $(event.target).closest('.source').remove();
+            calculateIncomeTotals();
+            calculateExpenseTotals();
+          });
 
-        $('#loginSubmit').on('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          let userName = $('#login-username').val();
-          let password = $('#login-password').val();
-          let loginInfo = { userName, password };
-          $.ajax('/api/login', {
-            method: 'POST',
-            data: loginInfo
-          })
-          .then((data)=>{
-            if(!data) {
-              $('#loginError').removeClass('d-none');
-            } else {
-              $('#loginModal').modal('hide');
-              $('#loginError').addClass('d-none');
-              $('#login-username').val(null);
-              $('#login-password').val(null);
-              login(data);
+          $(document).on('change','.income-input',(event)=>{
+            calculateIncomeTotals();
+            calculateExpenseTotals();
+          });
+
+          $(document).on('change','.expense-input',(event)=>{
+            updateExpenseViews();
+          });
+
+          $('#loginSubmit').on('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            let userName = $('#login-username').val();
+            let password = $('#login-password').val();
+            let loginInfo = { userName, password };
+            $.ajax('/api/login', {
+              method: 'POST',
+              data: loginInfo
+            })
+            .then((data)=>{
+              if(!data) {
+                $('#loginError').removeClass('d-none');
+              } else {
+                $('#loginModal').modal('hide');
+                $('#loginError').addClass('d-none');
+                $('#login-username').val(null);
+                $('#login-password').val(null);
+                login(data);
+              }
+            });
+
+          });
+
+          $('#loginButton').on('click', (event)=>{
+            let $loginButton = $(event.target);
+            if($loginButton.html() === 'Login'){
+              $('#loginModal').modal('toggle');
+            }else{
+              $.ajax('/api/login', { method: 'DELETE' })
+              .then((data)=>{
+                if (data){
+                  logout(data);
+                }
+              });
             }
           });
 
-        });
+          $('#new-budget').on('click', ()=>{resetBudget(true)});
 
-        $('#loginButton').on('click', (event)=>{
-          let $loginButton = $(event.target);
-          if($loginButton.html() === 'Login'){
-            $('#loginModal').modal('toggle');
-          }else{
-            $.ajax('/api/login', { method: 'DELETE' })
-            .then((data)=>{
-              if (data){
-                logout(data);
-              }
-            });
-          }
-        });
+          $('.save-budget-modal-trigger').on('click', (event)=>{
+            let val;
+            let type = $(event.target).data('savetype');
 
-        $('#new-budget').on('click', ()=>{resetBudget(true)});
+            if(budgetInfo.getLoadFile()){
+              val = budgetInfo.getName();
+            }else{
+              val = null;
+            };
+            $('#save-name').val(val);
+            $('#saveModal').data('saveType', type);
+            $('#saveModal').modal('toggle');
+          });
 
-        $('.save-budget-modal-trigger').on('click', (event)=>{
-          let val;
-          let type = $(event.target).data('savetype');
+          $('#load-budget-modal-trigger').on('click',()=>{
+            $('#load-files').empty();
+            $('#loading-load').removeClass('d-none');
+            $('#load-table').addClass('d-none');
 
-          if(budgetInfo.getLoadFile()){
-            val = budgetInfo.getName();
-          }else{
-            val = null;
-          };
-          $('#save-name').val(val);
-          $('#saveModal').data('saveType', type);
-          $('#saveModal').modal('toggle');
-        });
-
-        $('#load-budget-modal-trigger').on('click',()=>{
-          $('#load-files').empty();
-          $('#loading-load').removeClass('d-none');
-          $('#load-table').addClass('d-none');
-
-          if (budgetInfo.getLogin()){
-            $.ajax('/api/budgets')
-            .then((data)=>{
+            if (budgetInfo.getLogin()){
+              $.ajax('/api/budgets')
+              .then((data)=>{
+                let saves = [];
+                for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+                  let save = localStorage.key(i);
+                  let value = JSON.parse(localStorage.getItem(save));
+                  value.type = "local";
+                  saves.push(value);
+                }
+                saves = saves.concat(data.map((budget)=>{
+                  budget.type = "db";
+                  return budget;
+                }));
+                saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
+                console.log(saves);
+                saves.forEach((save,index)=>{
+                  let saveObj = {};
+                  let date = new Date(+save.dateSaved);
+                  saveObj.name = save.name;
+                  saveObj.date = date.toDateString();
+                  saveObj.incomes= JSON.stringify(save.incomes),
+                  saveObj.expenses= JSON.stringify(save.expenses)
+                  saveObj.type = save.type;
+                  addLoadFile(saveObj);
+                });
+                $('#loading-load').addClass('d-none');
+                $('#load-table').removeClass('d-none');
+              });
+            }else{
               let saves = [];
               for ( var i = 0, len = localStorage.length; i < len; ++i ) {
                 let save = localStorage.key(i);
@@ -372,414 +423,399 @@
                 value.type = "local";
                 saves.push(value);
               }
-              saves = saves.concat(data.map((budget)=>{
-                budget.type = "db";
-                return budget;
-              }));
               saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
-              console.log(saves);
               saves.forEach((save,index)=>{
                 let saveObj = {};
-                let date = new Date(+save.dateSaved);
+                let date = new Date(save.dateSaved);
                 saveObj.name = save.name;
                 saveObj.date = date.toDateString();
                 saveObj.incomes= JSON.stringify(save.incomes),
                 saveObj.expenses= JSON.stringify(save.expenses)
                 saveObj.type = save.type;
                 addLoadFile(saveObj);
+                $('#loading-load').addClass('d-none');
+                $('#load-table').removeClass('d-none');
               });
-              $('#loading-load').addClass('d-none');
-              $('#load-table').removeClass('d-none');
-            });
-          }else{
-            let saves = [];
-            for ( var i = 0, len = localStorage.length; i < len; ++i ) {
-              let save = localStorage.key(i);
-              let value = JSON.parse(localStorage.getItem(save));
-              value.type = "local";
-              saves.push(value);
             }
-            saves = saves.sort((a, b)=>{return b.dateSaved-a.dateSaved});
-            saves.forEach((save,index)=>{
-              let saveObj = {};
-              let date = new Date(save.dateSaved);
-              saveObj.name = save.name;
-              saveObj.date = date.toDateString();
-              saveObj.incomes= JSON.stringify(save.incomes),
-              saveObj.expenses= JSON.stringify(save.expenses)
-              saveObj.type = save.type;
-              addLoadFile(saveObj);
-              $('#loading-load').addClass('d-none');
-              $('#load-table').removeClass('d-none');
-            });
-          }
-          $('#loadModal').modal('toggle');
+            $('#loadModal').modal('toggle');
+          });
+
+          $('#save-budget').on('click', saveBudget);
+
+          $(document).on('click', '.load-budget', loadBudget);
+
+          $('#add-income-button').on('click', addIncome);
+
+          $('#add-expense-button').on('click', addExpense);
+
+          $('.add-category').on('click', ()=>{
+            let type = $(event.target).data('type');
+            $('#categoryModal').data('type', type);
+            $('#categoryModal').modal('toggle');
+          });
+
+          $('#new-category').on('click', createCategory);
+
+          $(document).on('click', '.remove-category', ()=>{
+            $(event.target).closest('.category').remove();
+          });
+
+          $(document).on('click', '.delete-load', deleteLoad);
         });
 
-        $('#save-budget').on('click', saveBudget);
+        $('#income-container').sortable();
 
-        $(document).on('click', '.load-budget', loadBudget);
+        $('#expense-container').sortable();
 
-        $('#add-income-button').on('click', addIncome);
-
-        $('#add-expense-button').on('click', addExpense);
-
-        $('.add-category').on('click', ()=>{
-          let type = $(event.target).data('type');
-          $('#categoryModal').data('type', type);
-          $('#categoryModal').modal('toggle');
-        });
-
-        $('#new-category').on('click', createCategory);
-
-        $(document).on('click', '.remove-category', ()=>{
-          $(event.target).closest('.category').remove();
-        });
-
-        $(document).on('click', '.delete-load', deleteLoad);
-      });
-
-      $('#income-container').sortable();
-
-      $('#expense-container').sortable();
-
-      let deleteLoad = (event)=>{
-        if(confirm('This will permanently delete this budget. Are you sure?')){
-          let $button = $(event.target).closest('.delete-load');
-          let $row = $(event.target).closest('tr');
-          let key = $row.find('td').first().html();
-          let type = $button.data('type');
-          $row.remove();
-          if(type === 'local'){
-            localStorage.removeItem(key);
-          }else if(type === 'db'){
-            $.ajax('/api/budgets',{method: 'DELETE', data: {name: key} })
-            .then((data)=>{
-              //TODO: do something with deleted budget?
-            });
+        let deleteLoad = (event)=>{
+          if(confirm('This will permanently delete this budget. Are you sure?')){
+            let $button = $(event.target).closest('.delete-load');
+            let $row = $(event.target).closest('tr');
+            let key = $row.find('td').first().html();
+            let type = $button.data('type');
+            $row.remove();
+            if(type === 'local'){
+              localStorage.removeItem(key);
+            }else if(type === 'db'){
+              $.ajax('/api/budgets',{method: 'DELETE', data: {name: key} })
+              .then((data)=>{
+                //TODO: do something with deleted budget?
+              });
+            }
           }
         }
-      }
 
-      let addIncome = (event, context)=>{
-        if (context === undefined || context.length === 0){
-          context = {
-            name: '',
-            value: '',
-          };
-        }
-        let source = $('#income-template').html();
-        let template = Handlebars.compile(source);
-        let html = template(context);
-        $('#income-container').append(html);
-      }
-
-      let addExpense = (event, context)=>{
-        if (context === undefined || context.length === 0){
-          context = {};
-        }
-        let source = $('#expense-template').html();
-        let template = Handlebars.compile(source);
-        let html = template(context);
-        $('#expense-container').append(html);
-      }
-
-      let addLoadFile = (context)=>{
-        context.databaseSave = context.type === 'db';
-        let source = $('#load-file-template').html();
-        let template = Handlebars.compile(source);
-        let html = template(context);
-        $('#load-files').append(html);
-      }
-
-      function updateExpenseViews(){
-        let $expenseValuePanel = $(event.target).closest('.expense').find('.expense-value');
-        let inputValue = $(event.target).val();
-        if(inputValue[0] === "~"){
-          inputValue = inputValue.substring(1);
-        }
-        if(inputValue.indexOf('%') > -1){
-          let incomeTotal = +($('#income-total').val());
-          let percentage = $(event.target).val().split('%')[0];
-          if(isNaN(percentage)){
-            $(event.target).val('');
-            $expenseValuePanel.html('$0.00');
-          }else{
-            percentage = +percentage;
-            let value = (incomeTotal * (percentage/100)).toFixed(2);
-            $expenseValuePanel.html(`$${value}`);
+        let addIncome = (event, context)=>{
+          if (context === undefined || context.length === 0){
+            context = {
+              name: '',
+              value: '',
+            };
           }
-        }else if(isNaN(inputValue)){
-          $(event.target).val('');
-          $expenseValuePanel.html('$0.00');
-        }else{
-          $expenseValuePanel.html(`$${(+inputValue).toFixed(2)}`);
+          let source = $('#income-template').html();
+          let template = Handlebars.compile(source);
+          let html = template(context);
+          $('#income-container').append(html);
         }
-        calculateExpenseTotals();
-      }
 
-      function calculateExpenseTotals(){
-        let total = 0;
-        $('.expense-value').each((index,ele)=>{
-          let amount = $(ele).html().split('$')[1];
-          total += +(amount);
-        });
-        $('#expense-total').val(total.toFixed(2));
-        buildGraph();
-      }
-
-      function calculateIncomeTotals(){
-        let incomeCount = 0.0;
-        $('.income').each((index, ele)=>{
-          let amount = $(ele).find('.income-amount').val();
-          if(amount[0] === "~"){
-            amount = amount.substring(1);
+        let addExpense = (event, context)=>{
+          if (context === undefined || context.length === 0){
+            context = {};
           }
-          amount = +amount;
-          incomeCount += amount;
-        });
-        incomeCount = incomeCount.toFixed(2);
-        $('#income-total').val(incomeCount);
-        buildGraph();
-      }
-
-      function buildGraph(){
-        let data = [];
-        let income = +($('#income-total').val());
-        let expenses = +($('#expense-total').val());
-        let diff = income-expenses;
-        let surplusPercent = diff/income*100;
-        setDiff(diff);
-        if (income <= 0 || $('.expense').length < 1){
-          return;
+          let source = $('#expense-template').html();
+          let template = Handlebars.compile(source);
+          let html = template(context);
+          $('#expense-container').append(html);
         }
-        $('.expense').each((index, ele)=>{
-          let name = $(ele).find('.expense-name').val();
-          let cost = $(ele).find('.expense-value').html();
-          cost = +cost.split('$')[1];
-          let percent = (cost/income).toFixed(2);
-          data.push({y: ((+percent)*100), label: name});
-        });
 
-        data.unshift({y: surplusPercent, label: "surplus"})
-        var chart = new CanvasJS.Chart("chartContainer", {
-        	animationEnabled: false,
-        	title: {
-        		text:  budgetInfo.getName()
-        	},
-        	data: [{
-        		type: "pie",
-        		startAngle: 240,
-        		yValueFormatString: "##0.00\"%\"",
-        		indexLabel: "{label} {y}",
-        		dataPoints: data
-        	}]
-        });
-        chart.render();
-      }
-
-      function setDiff(diff){
-        $('#diff-box').val(`${diff>=0?'':'-'}$${Math.abs(diff).toFixed(2)}`);
-        if(diff > 0){
-          $('#diff-box').addClass('bg-success text-light');
-          $('#diff-box').removeClass('bg-danger');
-        }else if(diff === 0){
-          $('#diff-box').removeClass('bg-success text-light');
-          $('#diff-box').removeClass('bg-danger text-light');
-        }else{
-          $('#diff-box').removeClass('bg-success');
-          $('#diff-box').addClass('bg-danger text-light');
+        let addLoadFile = (context)=>{
+          context.databaseSave = context.type === 'db';
+          let source = $('#load-file-template').html();
+          let template = Handlebars.compile(source);
+          let html = template(context);
+          $('#load-files').append(html);
         }
-      }
 
-      function resetBudget(verify){
-        if(verify){
-          if(!confirm('All unsaved budget data will be lost. Are you sure?')){
-            return
+        function updateExpenseViews(){
+          let $expenseValuePanel = $(event.target).closest('.expense').find('.expense-value');
+          let inputValue = $(event.target).val();
+          if(inputValue[0] === "~"){
+            inputValue = inputValue.substring(1);
           }
-        }
-        budgetInfo.resetData();
-        $('#income-container').empty();
-        $('#income-total').val('0.00');
-        $('#expense-container').empty();
-        $('#expense-total').val('0.00');
-
-        var chart = new CanvasJS.Chart("chartContainer", {});
-        buildGraph();
-      }
-
-      function loadBudget(){
-        let name = $(this).closest('.load-row').find('.load-name').html();
-        budgetInfo.setName(name);
-        let button = $(this);
-        let incomes = button.data('incomes');
-        let expenses = button.data('expenses');
-        budgetInfo.setIncomes(incomes);
-        budgetInfo.setExpenses(expenses);
-        $('#income-container').empty();
-        incomes.forEach((income, index)=>{
-          if(income.category){
-            addCategory(income, 'income');
-          }else{
-            addIncome(null, income);
-          }
-        });
-        $('.income-input').first().change();
-
-        $('#expense-container').empty();
-        expenses.forEach((expense, index)=>{
-          if(expense.category){
-            addCategory(expense, 'expense');
-          }else{
-            addExpense(null, expense);
-          }
-        });
-
-        $('.expense').each((i,ele)=>{
-          let $ele = $(ele);
-          let $expenseValuePanel = $ele.find('.expense-value');
-          let val = $ele.find('.expense-input').val();
-          if (val.indexOf('%') > -1){
-            let percentage = val.split('%')[0];
+          if(inputValue.indexOf('%') > -1){
+            let incomeTotal = +($('#income-total').val());
+            let percentage = $(event.target).val().split('%')[0];
             if(isNaN(percentage)){
-              $ele.find('.expense-input').val('');
+              $(event.target).val('');
               $expenseValuePanel.html('$0.00');
             }else{
               percentage = +percentage;
-              let incomeTotal = +($('#income-total').val());
               let value = (incomeTotal * (percentage/100)).toFixed(2);
               $expenseValuePanel.html(`$${value}`);
             }
-          }else if(val[0]==='~'){
-            val = val.substring(1);
-            $expenseValuePanel.html(`$${(+val).toFixed(2)}`);
-          }else if(isNaN(val)){
-            $ele.find('.expense-input').val('');
+          }else if(isNaN(inputValue)){
+            $(event.target).val('');
             $expenseValuePanel.html('$0.00');
           }else{
-            $expenseValuePanel.html(`$${(+val).toFixed(2)}`);
+            $expenseValuePanel.html(`$${(+inputValue).toFixed(2)}`);
+          }
+          calculateExpenseTotals();
+        }
+
+        function calculateExpenseTotals(){
+          let total = 0;
+          $('.expense-value').each((index,ele)=>{
+            let amount = $(ele).html().split('$')[1];
+            total += +(amount);
+          });
+          $('#expense-total').val(total.toFixed(2));
+          buildGraph();
+        }
+
+        function calculateIncomeTotals(){
+          let incomeCount = 0.0;
+          $('.income').each((index, ele)=>{
+            let amount = $(ele).find('.income-amount').val();
+            if(amount[0] === "~"){
+              amount = amount.substring(1);
+            }
+            amount = +amount;
+            incomeCount += amount;
+          });
+          incomeCount = incomeCount.toFixed(2);
+          $('#income-total').val(incomeCount);
+          buildGraph();
+        }
+
+        function buildGraph(){
+          let data = [];
+          let income = +($('#income-total').val());
+          let expenses = +($('#expense-total').val());
+          let diff = income-expenses;
+          let surplusPercent = diff/income*100;
+          setDiff(diff);
+          if (income <= 0 || $('.expense').length < 1){
+            return;
+          }
+          $('.expense').each((index, ele)=>{
+            let name = $(ele).find('.expense-name').val();
+            let cost = $(ele).find('.expense-value').html();
+            cost = +cost.split('$')[1];
+            let percent = (cost/income).toFixed(2);
+            data.push({y: ((+percent)*100), label: name});
+          });
+
+          data.unshift({y: surplusPercent, label: "surplus"})
+          var chart = new CanvasJS.Chart("chartContainer", {
+          	animationEnabled: false,
+          	title: {
+          		text:  budgetInfo.getName()
+          	},
+          	data: [{
+          		type: "pie",
+          		startAngle: 240,
+          		yValueFormatString: "##0.00\"%\"",
+          		indexLabel: "{label} {y}",
+          		dataPoints: data
+          	}]
+          });
+          chart.render();
+        }
+
+        function setDiff(diff){
+          $('#diff-box').val(`${diff>=0?'':'-'}$${Math.abs(diff).toFixed(2)}`);
+          if(diff > 0){
+            $('#diff-box').addClass('bg-success text-light');
+            $('#diff-box').removeClass('bg-danger');
+          }else if(diff === 0){
+            $('#diff-box').removeClass('bg-success text-light');
+            $('#diff-box').removeClass('bg-danger text-light');
+          }else{
+            $('#diff-box').removeClass('bg-success');
+            $('#diff-box').addClass('bg-danger text-light');
+          }
+        }
+
+        function resetBudget(verify){
+          if(verify){
+            if(!confirm('All unsaved budget data will be lost. Are you sure?')){
+              return
+            }
+          }
+          budgetInfo.resetData();
+          $('#income-container').empty();
+          $('#income-total').val('0.00');
+          $('#expense-container').empty();
+          $('#expense-total').val('0.00');
+
+          var chart = new CanvasJS.Chart("chartContainer", {});
+          buildGraph();
+        }
+
+        function loadBudget(event, budget){
+          let name = 'DEFAULT BUDGET NAME';
+          let incomes = [];
+          let expenses = [];
+
+          if (budget){
+            name = budget.name;
+            incomes = budget.incomes;
+            expenses = budget.expenses;
+          }else {
+            let button = $(this);
+            name = button.closest('.load-row').find('.load-name').html();
+            incomes = button.data('incomes');
+            expenses = button.data('expenses');
           }
 
-        });
-        calculateExpenseTotals()
+          budgetInfo.setName(name);
+          budgetInfo.setIncomes(incomes);
+          budgetInfo.setExpenses(expenses);
+          $('#income-container').empty();
+          incomes.forEach((income, index)=>{
+            if(income.category){
+              addCategory(income, 'income');
+            }else{
+              addIncome(null, income);
+            }
+          });
+          $('.income-input').first().change();
 
-        $('#loadModal').modal('toggle');
-        budgetInfo.setLoadFile(true);
-      }
+          $('#expense-container').empty();
+          expenses.forEach((expense, index)=>{
+            if(expense.category){
+              addCategory(expense, 'expense');
+            }else{
+              addExpense(null, expense);
+            }
+          });
 
-      function saveBudget(){
-        let saveNameValue = $('#save-name').val();
-        budgetInfo.setName(saveNameValue);
-        buildGraph();
-
-        let budget = {};
-        budget.name = saveNameValue;
-        budget.dateSaved = Date.now();
-        budget.incomes = [];
-        budget.expenses =[];
-        $('#income-container').children().each((index, ele)=>{
-          let inc;
-          if($(ele).hasClass('category')){
-            inc = {
-              category: $(ele).find('.category-title').html(),
-              color: '#FF0000'
-            };
-          }else{
-            inc = {
-              name: $(ele).find('.income-input').val(),
-              value: Number($(ele).find('.income-amount').val())
-            };
-          }
-          budget.incomes.push(inc)
-        });
-
-        $('#expense-container').children().each((index, ele)=>{
-          let exp;
-          if($(ele).hasClass('category')){
-            exp = {
-              category: $(ele).find('.category-title').html(),
-              color: '#FF0000'
-            };
-          }else{
-            let val = $(ele).find('.expense-input').val();
-            if(val.indexOf('%') > -1){
+          $('.expense').each((i,ele)=>{
+            let $ele = $(ele);
+            let $expenseValuePanel = $ele.find('.expense-value');
+            let val = $ele.find('.expense-input').val();
+            if (val.indexOf('%') > -1){
               let percentage = val.split('%')[0];
               if(isNaN(percentage)){
-                val = 0;
+                $ele.find('.expense-input').val('');
+                $expenseValuePanel.html('$0.00');
+              }else{
+                percentage = +percentage;
+                let incomeTotal = +($('#income-total').val());
+                let value = (incomeTotal * (percentage/100)).toFixed(2);
+                $expenseValuePanel.html(`$${value}`);
               }
-            }else if(val[0] === '~'){
-              val = val;
+            }else if(val[0]==='~'){
+              val = val.substring(1);
+              $expenseValuePanel.html(`$${(+val).toFixed(2)}`);
+            }else if(isNaN(val)){
+              $ele.find('.expense-input').val('');
+              $expenseValuePanel.html('$0.00');
             }else{
-              val = Number(val);
+              $expenseValuePanel.html(`$${(+val).toFixed(2)}`);
             }
-            exp = {
-              name: $(ele).find('.expense-name').val(),
-              value: val
-            }
-          }
 
-          budget.expenses.push(exp);
-        });
-        // console.log(budget);
-        let type = $('#saveModal').data('saveType');
-        if ( type === 'local'){
-          localStorage.setItem(saveNameValue, JSON.stringify(budget));
-          $('#save-name').val('')
-          $('#saveModal').modal('toggle');
-        }else if(type === 'db' && budgetInfo.getLogin()){
-          return $.ajax('/api/budgets', { method: 'POST', data: {
-            name: budget.name,
-            dateSaved: budget.dateSaved,
-            expenses: JSON.stringify(budget.expenses),
-            incomes: JSON.stringify(budget.incomes),
-          } })
-          .then((data)=>{/*TODO: do something with the data?*/})
-        }else{
-          console.error('issue saving budget:', budget)
+          });
+          calculateExpenseTotals()
+
+          $('#loadModal').modal('hide');
+          budgetInfo.setLoadFile(true);
         }
-      }
 
-      function addCategory(context, type){
-        let source = $('#category-template').html();
-        let template = Handlebars.compile(source);
-        let html = template({
-          title: context.category.toUpperCase()
-        });
-        $('#'+type+'-container').append(html);
-      }
+        function saveBudget(){
+          let saveNameValue = $('#save-name').val();
+          budgetInfo.setName(saveNameValue);
+          buildGraph();
 
-      function createCategory(){
-        let type = $('#categoryModal').data('type');
-        let title = $('#category-name').val();
-        $('#category-name').val(null);
-        addCategory({category: title},type);
-        $('#categoryModal').modal('toggle');
-      }
+          let budget = {};
+          budget.name = saveNameValue;
+          budget.dateSaved = Date.now();
+          budget.incomes = [];
+          budget.expenses =[];
+          $('#income-container').children().each((index, ele)=>{
+            let inc;
+            if($(ele).hasClass('category')){
+              inc = {
+                category: $(ele).find('.category-title').html(),
+                color: '#FF0000'
+              };
+            }else{
+              inc = {
+                name: $(ele).find('.income-input').val(),
+                value: Number($(ele).find('.income-amount').val())
+              };
+            }
+            budget.incomes.push(inc)
+          });
 
-      function addNameCard(user){
-        let source = $('#nameplate-control-template').html();
-        let template = Handlebars.compile(source);
-        let html = template(user);
-        $('#nav-controls').prepend(html);
-      }
+          $('#expense-container').children().each((index, ele)=>{
+            let exp;
+            if($(ele).hasClass('category')){
+              exp = {
+                category: $(ele).find('.category-title').html(),
+                color: '#FF0000'
+              };
+            }else{
+              let val = $(ele).find('.expense-input').val();
+              if(val.indexOf('%') > -1){
+                let percentage = val.split('%')[0];
+                if(isNaN(percentage)){
+                  val = 0;
+                }
+              }else if(val[0] === '~'){
+                val = val;
+              }else{
+                val = Number(val);
+              }
+              exp = {
+                name: $(ele).find('.expense-name').val(),
+                value: val
+              }
+            }
 
-      function login(user){
-        addNameCard(user);
-        $('#loginText').html('Logout');
-        $('#save-budget-db').attr('disabled', false);
-        $('#save-budget-db').removeClass('btn-dark');
-        $('#save-budget-db').addClass('btn-outline-dark');
-        budgetInfo.loginUser();
-      }
+            budget.expenses.push(exp);
+          });
+          // console.log(budget);
+          let type = $('#saveModal').data('saveType');
+          if ( type === 'local'){
+            localStorage.setItem(saveNameValue, JSON.stringify(budget));
+            $('#save-name').val('')
+            $('#saveModal').modal('toggle');
+          }else if(type === 'db' && budgetInfo.getLogin()){
+            return $.ajax('/api/budgets', { method: 'POST', data: {
+              name: budget.name,
+              dateSaved: budget.dateSaved,
+              expenses: JSON.stringify(budget.expenses),
+              incomes: JSON.stringify(budget.incomes),
+            } })
+            .then((data)=>{/*TODO: do something with the data?*/})
+          }else{
+            console.error('issue saving budget:', budget)
+          }
+        }
 
-      function logout(user){
-        $('#loginText').html('Login');
-        $('#namecard').remove();
-        $('#save-budget-db').attr('disabled', true);
-        $('#save-budget-db').addClass('btn-dark');
-        $('#save-budget-db').removeClass('btn-outline-dark');
-        budgetInfo.logoutUser();
-      }
+        function addCategory(context, type){
+          let source = $('#category-template').html();
+          let template = Handlebars.compile(source);
+          let html = template({
+            title: context.category.toUpperCase()
+          });
+          $('#'+type+'-container').append(html);
+        }
+
+        function createCategory(){
+          let type = $('#categoryModal').data('type');
+          let title = $('#category-name').val();
+          $('#category-name').val(null);
+          addCategory({category: title},type);
+          $('#categoryModal').modal('toggle');
+        }
+
+        function addNameCard(user){
+          let source = $('#nameplate-control-template').html();
+          let template = Handlebars.compile(source);
+          let html = template(user);
+          $('#nav-controls').prepend(html);
+        }
+
+        function login(user){
+          addNameCard(user);
+          $('#loginText').html('Logout');
+          $('#save-budget-db').attr('disabled', false);
+          $('#save-budget-db').removeClass('btn-dark');
+          $('#save-budget-db').addClass('btn-outline-dark');
+          budgetInfo.loginUser();
+        }
+
+        function logout(user){
+          $('#loginText').html('Login');
+          $('#namecard').remove();
+          $('#save-budget-db').attr('disabled', true);
+          $('#save-budget-db').addClass('btn-dark');
+          $('#save-budget-db').removeClass('btn-outline-dark');
+          budgetInfo.logoutUser();
+        }
+      })()
     </script>
 
 

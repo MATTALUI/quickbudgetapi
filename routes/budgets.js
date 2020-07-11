@@ -7,7 +7,14 @@ router.get('/', (req,res,next)=>{
 });
 
 router.get('/public/:publicBudgetId', (req,res,next)=>{
-  queries.getPublicBudget(req.params.publicBudgetId).then((budget)=>{ res.send(budget); });
+  queries.getPublicBudget(req.params.publicBudgetId)
+  .then((budget)=>{
+    res.send(budget);
+  })
+  .catch((e) => {
+    res.status(404);
+    return res.send({ error: `No public budget exists: ${req.params.publicBudgetId}` });
+  });
 });
 
 router.post('/', (req,res,next)=>{

@@ -25,11 +25,12 @@ exports.seed = function(knex, Promise) {
         user_id: 1,
         dateSaved: 1594495865544,
         public: true,
+        uuid: 'a1113f43-9f1a-4562-ab01-ce01b609d691',
         incomes: JSON.stringify([{name: "Etsy Sales", value: 420.69}]),
         expenses: JSON.stringify([
           {category: 'General expenses', color: '#000000'},
           {name: "savings", value: "10%"},
-          {name: "cat food", calue: 87.03}
+          {name: "cat food", value: 87.03}
         ])
       }
     ]);
