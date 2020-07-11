@@ -14,9 +14,9 @@ app.use(morgan());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
   res.removeHeader("X-Powered-By");
-  res.set({'X-who-stole-the-cookies-from-the-cookie-jar': 'matt'});
+  res.set({'X-who-stole-the-cookies-from-the-cookie-jar': 'Matt'});
   next();
 });
 
@@ -24,20 +24,24 @@ app.use('/api', api);
 app.use('/public', express.static('public'));
 
 app.get('/', (req,res,next)=>{
-  res.sendFile(path.join(__dirname+'/index.html'));
+  res.redirect('/budget');
 });
 
-app.use('*', (req, res, next)=>{
+app.get('/budget', (req, res,next ) => {
+  res.sendFile(path.join(`${__dirname}/budget.html`));
+});
+
+app.use('*', (req, res, next) => {
   res.sendStatus(404);
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  let ip = '10.0.0.119';
-  app.listen(port, ip,()=>{
-    console.log('listening on '+ip+':'+ port);
+if (process.env.NODE_ENV !== 'production' && false) {
+  let ip = '0.0.0.0';
+  app.listen(port, ip, () => {
+    console.log(`listening on ${ip}:${port}`);
   });
 }else{
-  app.listen(port,()=>{
-    console.log('listening on '+ port);
+  app.listen(port, () => {
+    console.log(`listening on ${port}`);
   });
 }

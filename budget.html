@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>Quick Budget Calculator</title>
     <link rel="icon" href="https://d1nhio0ox7pgb.cloudfront.net/_img/o_collection_png/green_dark_grey/256x256/plain/currency_dollar.png">
 
     <!-- jquery -->
@@ -25,33 +26,14 @@
   <body>
 
     <style>
-      h6{
-        margin-top: .5rem;
-      }
-      /* table{
-        max-width: 100%;
-      } */
       a.canvasjs-chart-credit{
         display: none;
       }
       .tiny-font{
         font-size: .7em;
       }
-      .category{
-        width: 100%;
-        margin-bottom: 1em;
-        margin-top: 2em;
-      }
       .clickable{
         cursor: pointer;
-      }
-      .loading-container{
-        width: 50%;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      .center-img{
-        width: 100%;
       }
     </style>
 
@@ -116,14 +98,22 @@
 
     </div>
 
-    <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+    <div id="chartContainer" class="w-100" style="height: 20rem;"></div>
 
     <div class="container mb-5">
       <div class="row">
-        <button id="new-budget" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark">New Budget</button>
-        <button id="load-budget-modal-trigger" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark">Load Budget</button>
-        <button id="save-button-local" class="btn btn-sm btn-primary col-sm-3 btn-outline-dark save-budget-modal-trigger" data-savetype="local">Save Budget Locally</button>
-        <button id="save-budget-db" class="btn btn-sm btn-primary col-sm-3 btn-dark save-budget-modal-trigger" data-savetype="db" disabled>Save Budget</button>
+        <div class="col-sm pl-2 pr-2">
+          <button id="new-budget" class="btn btn-sm btn-primary w-100 btn-outline-dark">New Budget</button>
+        </div>
+        <div class="col-sm pl-2 pr-2">
+          <button id="load-budget-modal-trigger" class="btn btn-sm btn-primary w-100 btn-outline-dark">Load Budget</button>
+        </div>
+        <div class="col-sm pl-2 pr-2">
+          <button id="save-button-local" class="btn btn-sm btn-primary w-100 btn-outline-dark save-budget-modal-trigger" data-savetype="local">Save Budget Locally</button>
+        </div>
+        <div class="col-sm pl-2 pr-2">
+          <button id="save-budget-db" class="btn btn-sm btn-primary w-100 btn-dark save-budget-modal-trigger" data-savetype="db" disabled>Save Budget</button>
+        </div>
       </div>
     </div>
 
@@ -190,12 +180,13 @@
           <div class="modal-body">
             <div class="container">
               <div class="row">
-                <div id="loading-load" class ="loading-container">
-                  <img src = "public/loading.gif" class="center-img"/>
+                <div id="loading-load" class ="loading-container w-50 mx-auto">
+                  <img src = "public/loading.gif" class="w-100"/>
                 </div>
                 <table id="load-table" class="table table-striped">
                   <thead>
                   <tr>
+                    <th></th>
                     <th>Name</th>
                     <th>Date</th>
                     <th></th>
@@ -228,6 +219,7 @@
             <div class="container">
               <div class="row">
                 <p>Logging in provides the opportunity to save budgets to the database. The option to save locally will still be available to those that would not like to create an account.</p>
+                <span id="loginError" class="text-danger d-none">Invalid username or password!</span>
                 <input id="login-username" type="text" placeholder="Username" class="form-control"/>
                 <input id="login-password" type="password" placeholder="Password" class="form-control mt-1 "/>
               </div>
@@ -302,8 +294,9 @@
           updateExpenseViews();
         });
 
-        $('#loginSubmit').on('click', (event)=>{
+        $('#loginSubmit').on('click', (event) => {
           event.preventDefault();
+          event.stopPropagation();
           let userName = $('#login-username').val();
           let password = $('#login-password').val();
           let loginInfo = { userName, password };
@@ -312,8 +305,15 @@
             data: loginInfo
           })
           .then((data)=>{
-            // console.log(data);
-            login(data);
+            if(!data) {
+              $('#loginError').removeClass('d-none');
+            } else {
+              $('#loginModal').modal('hide');
+              $('#loginError').addClass('d-none');
+              $('#login-username').val(null);
+              $('#login-password').val(null);
+              login(data);
+            }
           });
 
         });
@@ -476,6 +476,7 @@
       }
 
       let addLoadFile = (context)=>{
+        context.databaseSave = context.type === 'db';
         let source = $('#load-file-template').html();
         let template = Handlebars.compile(source);
         let html = template(context);
@@ -805,8 +806,17 @@
 
     <script id="load-file-template" type="text/x-handlebar-template">
       <tr class="load-row">
-        <td class="load-name">{{name}}</td>
-        <td> date {{date}}</td>
+        <td>
+          {{#if databaseSave}}
+            <i class="fas fa-cloud"></i>
+          {{else}}
+            <i class="fas fa-desktop"></i>
+          {{/if}}
+        </td>
+        <td class="load-name">
+        {{name}}
+        </td>
+        <td>{{date}}</td>
         <td>
           <button class="btn btn-outline-success load-budget" data-incomes='{{incomes}}' data-expenses='{{expenses}}'>
             <i class="fas fa-check-circle"></i>
@@ -820,8 +830,8 @@
     </script>
 
     <script id="category-template" type="text/x-handlebars-template">
-      <div class="bg-dark text-center text-light category" style="width:100%;background-color:{{color}} !important;">
-        <h6><span class="category-title">{{title}}</span> <i class="fas fa-times-circle clickable remove-category"></i></h6>
+      <div class="bg-dark text-center text-light category w-100 mb-3 mt-5" style="background-color:{{color}} !important;">
+        <h6 class="mt-2"><span class="category-title">{{title}}</span> <i class="fas fa-times-circle clickable remove-category"></i></h6>
       </div>
     </script>
 
