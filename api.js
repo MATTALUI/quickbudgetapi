@@ -10,10 +10,21 @@ router.use('/login', login);
 
 router.use('/mobile', mobile);
 
+const publicRoutes = [
+  /^\/api\/budgets\/public\/[\w|-]*$/ // public budgets
+];
 
+router.use('*', (req,res,next) => {
+  let publicRoute = false;
+  publicRoutes.forEach((pattern) => {
+    if (pattern.test(req.baseUrl)){
+      publicRoute = true;
+    }
+  });
 
-router.use('*', (req,res,next)=>{
-  if (req.cookies.user){
+  if (publicRoute){
+    next();
+  }else if(req.cookies.user){
     jwt.verify(req.cookies.user, process.env.JWTSECRET, (error, data)=>{
       if (error){
         return res.send({error});

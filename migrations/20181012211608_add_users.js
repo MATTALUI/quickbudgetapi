@@ -7,6 +7,7 @@ exports.up = function(knex, Promise) {
     table.string('lastName').notNullable();
   });
 };
+
 exports.down = function(knex, Promise) {
   return knex.schema.dropTable("users");
 };

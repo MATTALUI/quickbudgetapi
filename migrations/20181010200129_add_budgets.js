@@ -8,6 +8,7 @@ exports.up = function(knex, Promise) {
     table.json('incomes').notNullable();
   });
 };
+
 exports.down = function(knex, Promise) {
   return knex.schema.dropTable("budgets");
 };

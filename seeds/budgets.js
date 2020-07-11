@@ -6,7 +6,7 @@ exports.seed = function(knex, Promise) {
   .then(function () {
     return knex('budgets').insert([
       {
-        name: "matt",
+        name: "Matt",
         user_id: 1,
         dateSaved: 1538149939679,
         incomes: JSON.stringify([{name: "tracefirst", value: 2879.34}]),
@@ -18,6 +18,18 @@ exports.seed = function(knex, Promise) {
           {name: "car payment", value: 200},
           {name: "savings", value: 1000},
           {name: "phone", value: 70}
+        ])
+      },
+      {
+        name: "Public Budget",
+        user_id: 1,
+        dateSaved: 1594495865544,
+        public: true,
+        incomes: JSON.stringify([{name: "Etsy Sales", value: 420.69}]),
+        expenses: JSON.stringify([
+          {category: 'General expenses', color: '#000000'},
+          {name: "savings", value: "10%"},
+          {name: "cat food", calue: 87.03}
         ])
       }
     ]);

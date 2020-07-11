@@ -11,7 +11,16 @@ module.exports = {
     .select('*')
     .where('user_id', userId)
     .returning('*')
-    then(budgets=>budgets)
+    .then(budgets=>budgets);
+  },
+  getPublicBudget: (publicId) => {
+    return knex('budgets')
+    .select('*')
+    .where('uuid', publicId)
+    .where('public', true)
+    .returning('*')
+    .first()
+    .then(budget=>budget);
   },
   getUserInfo: (userName)=>{
     return knex('users')
